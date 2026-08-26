@@ -32,7 +32,11 @@ TARGET_DTE_MIN = 7                  # días a vencimiento mínimos preferidos
 TARGET_DTE_MAX = 14
 OTM_PCT_DIRECTIONAL = 0.02          # 2% fuera del dinero para calls/puts direccionales
 IRON_CONDOR_SHORT_PCT = 0.03        # strikes cortos ~3% fuera del dinero (bajado de 0.05 el 26-ago para la ventana DTE 7-14 del hackathon)
-IRON_CONDOR_WING_PCT = 0.03         # ancho de las alas del condor
+IRON_CONDOR_WING_PCT = 0.02         # ancho de las alas del condor (bajado de 0.03 el 26-ago: a 0.03,
+                                     # el ancho de ala en USD de SPY/QQQ a su precio actual excedia
+                                     # MAX_RISK_PER_TRADE_PCT=0.02 de $100k -> qty=0, el condor nunca
+                                     # podia abrirse en esos 2 simbolos. A 0.02 abre qty>=1 en los 3
+                                     # (SPY/AAPL/QQQ) con margen para variacion de precio
 PROTECTIVE_PUT_OTM_PCT = 0.03       # protective put ~3% fuera del dinero
 
 # Salida para estructuras de crédito (Iron Condor): pierde con el subyacente
