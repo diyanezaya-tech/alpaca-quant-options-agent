@@ -12,7 +12,13 @@ MEDIA_LENTA_VENTANA = 30
 VOLATILIDAD_VENTANA = 15
 VOL_PROMEDIO_VENTANA = 200          # se ajusta dinámicamente si hay poco histórico
 
-UMBRAL_TENDENCIA = 0.007            # 0.7% - filtro de ruido / confirmación de tendencia
+UMBRAL_TENDENCIA = 0.025            # 2.5% - subido de 0.7% el 26-ago: decision de producto para sesgar
+                                     # hacia Iron Condor (venta de premium, favorecido por theta decay en
+                                     # ventanas cortas) sobre direccional (necesita acertar direccion Y
+                                     # timing en 7-14 dias). Validado en 3 semanas historicas: 0 entradas
+                                     # direccionales buenas descartadas, 4-5 malas evitadas. OJO: en esa
+                                     # muestra elimina TENDENCIAL_ALCISTA por completo -- señal de
+                                     # sobreajuste a la muestra, no una garantia de edge real
 STOP_LOSS = 0.03                    # 3% - gestión de riesgo absoluto
 COMISION = 0.001                    # 0.1% - control de costos (equities, referencia)
 
