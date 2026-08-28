@@ -342,6 +342,18 @@ def ciclo(client, data_client, symbol: str, estado: dict, dry_run: bool, use_cli
         log("Régimen defensivo sin posiciones abiertas -> no se opera este ciclo.")
         return
 
+    # Guard contra duplicados: aunque `estado` (positions_state.json) no tenga
+    # registro para este símbolo, puede haber una posición real ya abierta en
+    # el bróker (estado local desactualizado, o dos instancias del loop
+    # corriendo por error un momento). Sin este chequeo, nada frena una
+    # apertura duplicada -- ya pasó dos veces (MSFT/NVDA 27-ago, SPY/AAPL/QQQ
+    # en la migración a Railway del 28-ago).
+    ya_abierta = next((p for p in posiciones if p.symbol.startswith(symbol)), None)
+    if ya_abierta is not None:
+        log(f"Ya hay posición real en el bróker para {symbol} sin registro local "
+            f"({ya_abierta.symbol}) — no se abre otra, revisar manualmente.")
+        return
+
     estrategia = construir_estrategia(regimen, client, symbol)
     if estrategia is None:
         log("No se pudo construir una estrategia de opciones viable (cadena no disponible).")
