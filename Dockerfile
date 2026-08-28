@@ -14,7 +14,7 @@ RUN curl -sL -o /tmp/alpaca-cli.tar.gz \
     && mv /tmp/alpaca /usr/local/bin/alpaca \
     && chmod +x /usr/local/bin/alpaca \
     && rm /tmp/alpaca-cli.tar.gz \
-    && alpaca --version
+    && alpaca version
 
 WORKDIR /app
 COPY requirements.txt .
