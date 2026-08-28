@@ -24,6 +24,35 @@ universo de 10 símbolos sin commitear a git, por lo que el primer intento
 de deploy corría silenciosamente con el universo viejo de 3. Ambos
 corregidos antes de cortar el proceso de la PC.
 
+**Un segundo caso del mismo patrón, encontrado después revisando
+`live_agent.log` completo:** el 27-ago a las 15:39 ET el agente (corriendo
+en la PC, contra `PA3EGUEP0QCV`) compró MSFT (6 contratos) y NVDA (4); 7
+minutos después, a las 15:46 ET, volvió a comprar los mismos símbolos de
+opción (7 MSFT más, 4 NVDA más) -- dos instancias del loop se solaparon un
+momento tras un reinicio y cada una operó sin saber de la otra.
+`positions_state.json` solo guardó la segunda entrada (la primera se
+pisó), así que la duplicación nunca se reflejó en el estado local ni se
+reportó -- quedó 13 MSFT / 8 NVDA reales en el broker, sin reconciliar,
+hasta que se encontró auditando el log completo. Como `PA3EGUEP0QCV` no es
+la cuenta que se juzga, no había apuro de timing para cerrarlo, pero sí
+confirma que la causa de fondo (ver abajo) ya se había manifestado antes
+de la migración a Railway -- dos veces es patrón, no accidente puntual.
+
+**La corrección estructural** (no solo la remediación manual de cada
+incidente): `ciclo()` en `live_agent.py` decidía si abrir una posición
+nueva mirando únicamente si el símbolo estaba en `estado`
+(`positions_state.json` local) -- nunca consultaba al broker si YA había
+una posición real abierta. Ahora, antes de construir una estrategia nueva,
+se chequea contra `posiciones` (ya se trae del broker un poco antes en la
+misma función): si cualquier posición real tiene un símbolo OCC que
+arranca con el ticker que se está por operar, no abre otra y loguea
+explícito para revisión manual, aunque el estado local no tenga registro
+de ella. Convierte "no correr dos procesos en paralelo" -- una disciplina
+manual que ya falló dos veces -- en algo que el código mismo previene, sin
+importar cuántas instancias corran por error. Validado con un test
+aislado (`scripts/test_guard_duplicados.py`, sin tocar ninguna cuenta
+real) y desplegado en Railway.
+
 Reutiliza el "Algoritmo Mutante" del proyecto App
 Trading original como cerebro de detección de régimen, y traduce cada
 régimen a una estructura de opciones concreta en vez de operar el

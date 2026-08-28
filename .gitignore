@@ -4,3 +4,4 @@ __pycache__/
 venv/
 *.log
 positions_state.json
+railway_account_status.json

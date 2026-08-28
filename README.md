@@ -28,6 +28,12 @@ instala el CLI oficial (`github.com/alpacahq/cli`, pin v0.0.13) en
 un fallback a SDK. `positions_state.json` vive en un volumen persistente de
 Railway (`STATE_DIR=/data`), no en el filesystem del contenedor.
 
+**Chequear el estado del agente en Railway** (Claude no tiene acceso directo
+desde una sesión cloud): correr `powershell -File scripts\snapshot_status.ps1`
+desde la raíz del proyecto. Sobrescribe `railway_status.log` (últimas 150
+líneas de log del deploy activo) y `railway_account_status.json` (cuenta +
+posiciones reales de `PA3SQTOC6A22`) — ninguno de los dos va a git.
+
 ## Sobre el acceso a red
 
 El proyecto se desarrolló originalmente asumiendo que el entorno cloud no
