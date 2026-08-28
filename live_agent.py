@@ -88,13 +88,22 @@ def log(msg: str):
 # --- Persistencia de estado (sobrevive reinicios) ---
 
 def _sembrar_estado_inicial_si_corresponde():
-    """Primer arranque en un volumen persistente (STATE_DIR seteado, ej. Railway)
-    sin positions_state.json todavía: siembra la foto de posiciones reales del
-    momento de la migración, para no perder de vista posiciones ya abiertas en
-    el broker. No corre en local (STATE_DIR sin setear) ni si el archivo ya
-    existe -- corre en el propio proceso, después de que el volumen ya está
-    montado (a diferencia de un preDeployCommand aparte, que corre antes)."""
-    if not os.getenv("STATE_DIR") or STATE_FILE.exists():
+    """Primer arranque en un volumen persistente (STATE_DIR seteado, ej. Railway):
+    siembra la foto de posiciones reales del momento de la migración, para no
+    perder de vista posiciones ya abiertas en el broker. Corre en el propio
+    proceso, después de que el volumen ya está montado (a diferencia de un
+    preDeployCommand aparte, que corre antes).
+
+    Usa un marker file (.seed_v2) en vez de STATE_FILE.exists() porque un
+    intento anterior (preDeployCommand corriendo antes del mount) dejó
+    positions_state.json en el volumen con datos corruptos: trackeaba los
+    strikes de posiciones duplicadas reales que se abrieron por el mismo bug
+    y que ya se cerraron a mano -- STATE_FILE.exists() habría sido True con
+    contenido incorrecto, así que no alcanzaba con chequear existencia."""
+    if not os.getenv("STATE_DIR"):
+        return
+    marker = STATE_DIR / ".seed_v2"
+    if marker.exists():
         return
     try:
         from scripts.seed_state import SNAPSHOT_28AGO
@@ -103,7 +112,8 @@ def _sembrar_estado_inicial_si_corresponde():
     STATE_DIR.mkdir(parents=True, exist_ok=True)
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(SNAPSHOT_28AGO, f, indent=2)
-    log(f"Sembrado {STATE_FILE} con {len(SNAPSHOT_28AGO)} posiciones (primer arranque en volumen persistente).")
+    marker.write_text("sembrado tras incidente del 28-ago (duplicados en SPY/AAPL/QQQ, remediados a mano)\n", encoding="utf-8")
+    log(f"Sembrado {STATE_FILE} con {len(SNAPSHOT_28AGO)} posiciones (re-siembra post-incidente, volumen persistente).")
 
 
 def cargar_estado() -> dict:

@@ -4,7 +4,14 @@ Hereda los parámetros del "Algoritmo Mutante" del proyecto original.
 """
 
 # --- Universo operable ---
-SYMBOLS = ["SPY", "AAPL", "QQQ"]  # subyacentes sobre los que se operan opciones
+SYMBOLS = ["SPY", "AAPL", "QQQ", "MSFT", "NVDA", "TSLA", "AMZN", "GOOGL", "META", "AMD"]
+# Ampliado de 3 a 10 el 26-ago (mismos 3 del concurso + 7 mas): demuestra dinamismo
+# real del agente (mas activos analizados/operados) y diversifica el riesgo, aunque
+# esto ultimo es mas debil de lo esperado -- ver sanity check de 2 semanas en
+# PROMPT_AMPLIAR_UNIVERSO_ACTIVOS: en la semana 17-21ago, 5 de 7 simbolos nuevos
+# perdieron la MISMA semana (tech large-cap correlacionado), asi que la
+# diversificacion no evito una mala semana comun a varios activos a la vez.
+# Cadena de opciones 7-14 DTE confirmada real via Alpaca para los 10 antes de sumarlos.
 
 # --- Parámetros del Cerebro Matemático (heredados) ---
 MEDIA_RAPIDA_VENTANA = 10
@@ -53,7 +60,9 @@ IRON_CONDOR_STOP_MULT = 2.0            # cerrar si la pérdida flotante llega a 
 
 # --- Gestión de riesgo / tamaño de posición ---
 MAX_RISK_PER_TRADE_PCT = 0.02       # máx 2% del equity en riesgo por operación
-MAX_CONCURRENT_POSITIONS = 3
+MAX_CONCURRENT_POSITIONS = 5        # subido de 3 el 26-ago junto con el universo ampliado a 10 simbolos.
+                                     # 5 x MAX_RISK_PER_TRADE_PCT(0.02) = 10% del equity -- tope explicito
+                                     # que se pidio no superar, queda justo en el limite
 OPTIONS_COMMISSION_PER_CONTRACT = 0.65  # referencia Alpaca
 
 TAKE_PROFIT_PCT = 0.05              # 5% a favor del subyacente -> toma ganancia (ajustado por grid search SPY/AAPL/QQQ)
