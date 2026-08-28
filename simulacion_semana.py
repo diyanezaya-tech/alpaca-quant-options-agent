@@ -36,7 +36,7 @@ from config import (
     TAKE_PROFIT_PCT, EXIT_DTE_BUFFER,
 )
 from regime_engine import detectar_regimen, TENDENCIAL_ALCISTA, TENDENCIAL_BAJISTA, DEFENSIVO
-from risk_manager import evaluar_stop_loss, evaluar_take_profit, evaluar_salida_iron_condor
+from risk_manager import evaluar_stop_loss, evaluar_take_profit, evaluar_activacion_breakeven, evaluar_salida_iron_condor
 from backtest import preparar_datos, _valor_piernas, _construir_iron_condor_sintetico
 
 DEFAULT_START = "2026-08-01"
@@ -44,7 +44,7 @@ DEFAULT_END = "2026-08-07"
 SYMBOLS_DEFAULT = ["SPY", "AAPL", "QQQ"]
 
 
-def simular_semana(symbol: str, start: str, end: str, out_lines: list) -> dict:
+def simular_semana(symbol: str, start: str, end: str, out_lines: list, breakeven: bool = False) -> dict:
     start_dt = pd.Timestamp(start, tz="UTC")
     end_dt = pd.Timestamp(end, tz="UTC")
 
@@ -101,8 +101,15 @@ def simular_semana(symbol: str, start: str, end: str, out_lines: list) -> dict:
             if posicion_abierta["kind"] == "direccional":
                 precio_entrada = posicion_abierta["precio_entrada_subyacente"]
                 es_alcista = posicion_abierta["legs"][0]["type"] == "call"
-                if evaluar_stop_loss(precio_entrada, precio, es_alcista):
-                    cerrar, motivo = True, "stop_loss"
+
+                if breakeven and not posicion_abierta.get("breakeven_activado", False):
+                    if evaluar_activacion_breakeven(precio_entrada, precio, es_alcista):
+                        posicion_abierta["breakeven_activado"] = True
+                        out_lines.append("    breakeven dinámico activado -- el stop ya no tolera hasta -3%, protege 0%.")
+                activado = posicion_abierta.get("breakeven_activado", False)
+
+                if evaluar_stop_loss(precio_entrada, precio, es_alcista, activado):
+                    cerrar, motivo = True, ("breakeven" if activado else "stop_loss")
                 elif evaluar_take_profit(precio_entrada, precio, es_alcista, TAKE_PROFIT_PCT):
                     cerrar, motivo = True, "take_profit"
                 elif dte_restante <= EXIT_DTE_BUFFER:
@@ -220,6 +227,7 @@ def simular_semana(symbol: str, start: str, end: str, out_lines: list) -> dict:
         "symbol": symbol, "pnl_realizado": pnl_realizado_semana, "pnl_flotante_final": pnl_flotante_final,
         "buyhold_pct": rendimiento_buyhold_pct, "n_trades_cerrados": len(trades_cerrados),
         "posicion_abierta_al_final": posicion_abierta is not None,
+        "trades_cerrados": trades_cerrados,
     }
 
 
@@ -228,6 +236,12 @@ def main():
     parser.add_argument("--symbol", default=None, help="Si se omite, corre SPY/AAPL/QQQ.")
     parser.add_argument("--start", default=DEFAULT_START)
     parser.add_argument("--end", default=DEFAULT_END)
+    parser.add_argument("--breakeven", action="store_true",
+                         help="Activa el breakeven dinámico direccional (ver PROMPT_BREAKEVEN_DINAMICO.md) "
+                              "en vez del stop loss fijo de -3% siempre. No afecta Iron Condor.")
+    parser.add_argument("--json-out", default=None,
+                         help="Si se pasa, además del .log escribe un JSON con los trades_cerrados de cada "
+                              "símbolo (para comparar con/sin breakeven programáticamente).")
     args = parser.parse_args()
 
     symbols = [args.symbol] if args.symbol else SYMBOLS_DEFAULT
@@ -248,7 +262,7 @@ def main():
 
     resultados = []
     for symbol in symbols:
-        r = simular_semana(symbol, args.start, args.end, out_lines)
+        r = simular_semana(symbol, args.start, args.end, out_lines, breakeven=args.breakeven)
         resultados.append(r)
 
     out_lines.append(f"\n\n{'='*70}\nRESUMEN COMPARATIVO ({args.start} a {args.end})\n{'='*70}")
@@ -264,10 +278,27 @@ def main():
     reporte = "\n".join(out_lines)
     print(reporte)
 
-    nombre_archivo = f"simulacion_semana_{args.start.replace('-', '')}_{args.end.replace('-', '')}.log"
+    sufijo = "_breakeven" if args.breakeven else ""
+    nombre_archivo = f"simulacion_semana_{args.start.replace('-', '')}_{args.end.replace('-', '')}{sufijo}.log"
     with open(nombre_archivo, "w", encoding="utf-8") as f:
         f.write(reporte)
     print(f"\n\n[Reporte guardado en {nombre_archivo}]")
+
+    if args.json_out:
+        import json
+        payload = [
+            {**{k: v for k, v in r.items() if k != "trades_cerrados"},
+             "trades_cerrados": [
+                 {**t,
+                  "fecha_apertura": t["fecha_apertura"].isoformat(),
+                  "fecha_cierre": t["fecha_cierre"].isoformat()}
+                 for t in r.get("trades_cerrados", [])
+             ]}
+            for r in resultados if not r.get("sin_datos")
+        ]
+        with open(args.json_out, "w", encoding="utf-8") as f:
+            json.dump(payload, f, indent=2)
+        print(f"[JSON guardado en {args.json_out}]")
 
 
 if __name__ == "__main__":

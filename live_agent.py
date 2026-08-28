@@ -59,6 +59,7 @@ from risk_manager import (
     necesita_cobertura_defensiva,
     evaluar_stop_loss,
     evaluar_take_profit,
+    evaluar_activacion_breakeven,
     evaluar_salida_iron_condor,
 )
 from executor import crear_cliente, ejecutar_estrategia, obtener_equity, obtener_posiciones
@@ -240,8 +241,15 @@ def evaluar_y_cerrar_posicion(client, symbol: str, entrada: dict, precio_actual:
     motivo = ""
 
     if entrada["kind"] == "direccional":
-        if evaluar_stop_loss(entrada["precio_entrada_subyacente"], precio_actual, entrada["es_alcista"]):
-            cerrar, motivo = True, "stop_loss"
+        if not entrada.get("breakeven_activado", False):
+            if evaluar_activacion_breakeven(entrada["precio_entrada_subyacente"], precio_actual, entrada["es_alcista"]):
+                entrada["breakeven_activado"] = True
+                log(f"{symbol}: breakeven dinámico activado (movimiento a favor de la entrada "
+                    f"superó la mitad del take profit) -- el stop ya no tolera hasta -3%, protege 0%.")
+
+        breakeven_activado = entrada.get("breakeven_activado", False)
+        if evaluar_stop_loss(entrada["precio_entrada_subyacente"], precio_actual, entrada["es_alcista"], breakeven_activado):
+            cerrar, motivo = True, ("breakeven" if breakeven_activado else "stop_loss")
         elif evaluar_take_profit(entrada["precio_entrada_subyacente"], precio_actual, entrada["es_alcista"]):
             cerrar, motivo = True, "take_profit"
         elif dte_restante <= EXIT_DTE_BUFFER:
@@ -327,10 +335,11 @@ def ciclo(client, data_client, symbol: str, estado: dict, dry_run: bool, use_cli
     entrada = estado.get(symbol)
     if entrada is not None:
         cerrada = evaluar_y_cerrar_posicion(client, symbol, entrada, precio_actual, posiciones, dry_run, use_cli)
-        if cerrada:
-            if not dry_run:
+        if not dry_run:
+            if cerrada:
                 del estado[symbol]
-                guardar_estado(estado)
+            guardar_estado(estado)  # persiste breakeven_activado aunque la posición siga abierta
+        if cerrada:
             return  # no abrir una nueva posición en el mismo ciclo en que se cerró la anterior
 
         if necesita_cobertura_defensiva(True, regimen.regime):

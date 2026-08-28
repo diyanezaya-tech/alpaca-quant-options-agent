@@ -70,5 +70,10 @@ EXIT_DTE_BUFFER = 2                  # cerrar por vencimiento cuando falten <= N
                                      # el DTE 7-14: con buffer=10 casi toda posición nueva se cerraría por buffer
                                      # a los 0-4 días de abierta, sin dejar margen a que actúe el stop/take-profit)
 
+BREAKEVEN_ACTIVACION_PCT = TAKE_PROFIT_PCT / 2  # 2.5%: movimiento a favor del subyacente que activa el
+                                     # breakeven dinámico (solo direccional, no Iron Condor) -- una vez activado,
+                                     # el stop deja de ser -STOP_LOSS desde entrada y pasa a ser 0% desde entrada,
+                                     # protegiendo la ganancia intermedia sin tocar el take profit del 5%.
+
 # --- Cuenta ---
 STARTING_BALANCE = 100_000

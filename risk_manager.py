@@ -17,6 +17,7 @@ from typing import Optional
 from config import (
     STOP_LOSS,
     TAKE_PROFIT_PCT,
+    BREAKEVEN_ACTIVACION_PCT,
     IRON_CONDOR_PROFIT_TARGET_PCT,
     IRON_CONDOR_STOP_MULT,
     MAX_RISK_PER_TRADE_PCT,
@@ -56,7 +57,7 @@ def evaluar_tamano_posicion(equity: float, prima_estimada_por_contrato: float,
 
 
 def evaluar_stop_loss(precio_entrada_subyacente: float, precio_actual_subyacente: float,
-                       es_alcista: bool) -> bool:
+                       es_alcista: bool, breakeven_activado: bool = False) -> bool:
     """
     Aplica el stop loss del 3% (regla heredada del algoritmo mutante) SIEMPRE
     sobre el precio del SUBYACENTE, nunca sobre la prima de la opción: la
@@ -66,13 +67,39 @@ def evaluar_stop_loss(precio_entrada_subyacente: float, precio_actual_subyacente
 
     es_alcista=True para long call / posiciones que ganan si el subyacente sube.
     es_alcista=False para long put / posiciones que ganan si el subyacente baja.
+
+    breakeven_activado=True (ver evaluar_activacion_breakeven) reemplaza el
+    umbral de -STOP_LOSS por 0%: la posición ya se movió lo suficiente a
+    favor en algún momento, así que el stop pasa a proteger esa ganancia
+    (no puede cerrar en pérdida neta desde la entrada) en vez de seguir
+    tolerando hasta -3%.
+
     Devuelve True si se debe cerrar la posición.
     """
     if precio_entrada_subyacente <= 0:
         return False
     variacion = (precio_actual_subyacente - precio_entrada_subyacente) / precio_entrada_subyacente
     movimiento_en_contra = -variacion if es_alcista else variacion
-    return movimiento_en_contra >= STOP_LOSS
+    umbral = 0.0 if breakeven_activado else STOP_LOSS
+    return movimiento_en_contra >= umbral
+
+
+def evaluar_activacion_breakeven(precio_entrada_subyacente: float, precio_actual_subyacente: float,
+                                  es_alcista: bool) -> bool:
+    """
+    True si el movimiento a favor del subyacente ya alcanzó
+    BREAKEVEN_ACTIVACION_PCT (mitad del take profit) -- momento en que el
+    stop loss de evaluar_stop_loss debe pasar a modo breakeven (0% desde
+    entrada) para no dejar que una ganancia intermedia se revierta hasta
+    -STOP_LOSS sin protección. Solo aplica a direccional: Iron Condor tiene
+    su propio gate (evaluar_salida_iron_condor) sobre el crédito recibido,
+    no sobre el subyacente.
+    """
+    if precio_entrada_subyacente <= 0:
+        return False
+    variacion = (precio_actual_subyacente - precio_entrada_subyacente) / precio_entrada_subyacente
+    movimiento_a_favor = variacion if es_alcista else -variacion
+    return movimiento_a_favor >= BREAKEVEN_ACTIVACION_PCT
 
 
 def evaluar_take_profit(precio_entrada_subyacente: float, precio_actual_subyacente: float,
