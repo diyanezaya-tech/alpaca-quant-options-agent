@@ -16,6 +16,18 @@ balance inicial $100,000.** `PA3EGUEP0QCV` fue solo la cuenta de
 desarrollo/pruebas pre-contest (usada del 24 al 27-ago), no la que se juzga
 — el mail de kickoff exige cuenta paper nueva y dedicada para la entrega.
 
+**Infraestructura: desde el 28-ago-2026 (~17:20 UTC) el agente corre en
+Railway** (proyecto `stellar-blessing`, servicio `live-agent`), no en la PC
+de Diego, para no depender de su conectividad durante la semana juzgada.
+Mismo código, misma cuenta, mismo comportamiento (10 símbolos, Iron
+Condor/direccional según régimen) — solo cambia dónde corre. Build vía
+`Dockerfile` (no Nixpacks/Railpack, que son el default de Railway pero no
+dan control fino sobre la instalación del binario Linux del Alpaca CLI):
+instala el CLI oficial (`github.com/alpacahq/cli`, pin v0.0.13) en
+`/usr/local/bin/alpaca`, así que la ejecución real sigue siendo por CLI, no
+un fallback a SDK. `positions_state.json` vive en un volumen persistente de
+Railway (`STATE_DIR=/data`), no en el filesystem del contenedor.
+
 ## Sobre el acceso a red
 
 El proyecto se desarrolló originalmente asumiendo que el entorno cloud no

@@ -11,6 +11,19 @@ con cadena de opciones semanal real confirmada vía Alpaca.
 balance inicial $100,000.** `PA3EGUEP0QCV` fue solo la cuenta de
 desarrollo/pruebas pre-contest, no la que se juzga.
 
+**Infraestructura: desde el 28-ago-2026 corre en Railway**, no en la PC,
+para no depender de la conectividad de Diego durante la semana juzgada —
+mismo código, misma cuenta, ejecución real sigue vía Alpaca CLI (binario
+Linux instalado en el build, no un fallback a SDK). La migración expuso y
+corrigió dos bugs reales de infraestructura (documentados como evidencia
+de hardening, no ocultados): un `preDeployCommand` que sembraba el estado
+de posiciones antes de que el volumen persistente estuviera montado
+-- causó apertura duplicada real de 3 Iron Condors, remediada a mano
+cerrando los legs extra contra el broker -- y un `config.py` con el
+universo de 10 símbolos sin commitear a git, por lo que el primer intento
+de deploy corría silenciosamente con el universo viejo de 3. Ambos
+corregidos antes de cortar el proceso de la PC.
+
 Reutiliza el "Algoritmo Mutante" del proyecto App
 Trading original como cerebro de detección de régimen, y traduce cada
 régimen a una estructura de opciones concreta en vez de operar el

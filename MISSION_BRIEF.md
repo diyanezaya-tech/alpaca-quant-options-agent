@@ -8,6 +8,12 @@ creatividad/engagement). **Cuenta paper oficial del hackathon:
 la que se juzga.
 Requisito obligatorio: todas las estrategias deben incluir opciones.
 
+**Infraestructura: desde el 28-ago-2026 corre en Railway (proyecto
+`stellar-blessing`, servicio `live-agent`), no en la PC** -- ver README.md
+y writeup.md para el detalle de la migración (y los dos bugs reales que
+expuso y corrigió antes del corte final: seed de estado pre-mount de
+volumen, y config.py sin commitear).
+
 Estado actual (confirmado en backtest con datos reales de Alpaca, 3 años):
 con `TAKE_PROFIT_PCT = 0.05` y `EXIT_DTE_BUFFER = 10` en `config.py`:
 
