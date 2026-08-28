@@ -3,10 +3,22 @@
 ## Qué hace
 
 Un agente de trading que opera **opciones** (requisito obligatorio del
-concurso) sobre SPY, AAPL y QQQ en la cuenta paper `PA3EGUEP0QCV`. Reutiliza
-el "Algoritmo Mutante" del proyecto App Trading original como cerebro de
-detección de régimen, y traduce cada régimen a una estructura de opciones
-concreta en vez de operar el subyacente directo.
+concurso) sobre un universo de **10 activos líquidos** — SPY, AAPL, QQQ
+(los del concurso) más MSFT, NVDA, TSLA, AMZN, GOOGL, META y AMD, todos
+con cadena de opciones semanal real confirmada vía Alpaca.
+
+**Cuenta paper oficial del hackathon: `PA3SQTOC6A22`, creada 28-ago-2026,
+balance inicial $100,000.** `PA3EGUEP0QCV` fue solo la cuenta de
+desarrollo/pruebas pre-contest, no la que se juzga.
+
+Reutiliza el "Algoritmo Mutante" del proyecto App
+Trading original como cerebro de detección de régimen, y traduce cada
+régimen a una estructura de opciones concreta en vez de operar el
+subyacente directo. Ampliar de 3 a 10 activos (26-ago) fue una decisión
+deliberada de producto, no solo técnica: demuestra el dinamismo real del
+agente (analiza y opera sobre 10 nombres cada ciclo, no 3) y busca
+diversificar el riesgo — aunque un sanity check de 2 semanas mostró que
+esa diversificación es más débil de lo esperado (ver más abajo).
 
 ## Lógica de IA: régimen → estructura
 
@@ -63,6 +75,51 @@ por la mejora de resolución temporal, no por el retorno del backtest.
 datos reales de la cadena de opciones de hoy: a 0.05 el crédito neto de un
 condor a 7-14 DTE es casi nulo (~0.5% del riesgo por ancho de ala) una vez
 descontada la comisión de las 4 patas; a 0.03 el crédito sube a ~1.8%.
+
+`UMBRAL_TENDENCIA` se subió de 0.7% a 2.5% (26-ago): decisión de producto
+para sesgar el diseño hacia Iron Condor sobre direccional — vender premium
+gana con el paso del tiempo (theta) si el subyacente no se mueve mucho,
+mientras que una posición direccional necesita acertar dirección *y*
+timing en la ventana corta del concurso, una exigencia más alta. Validado
+en 3 semanas históricas: 0 entradas direccionales buenas descartadas, 4-5
+malas evitadas, mejora de ~$3,200 en el mismo backtest. Con muestra más
+amplia (6 semanas) el sesgo se sostiene sin eliminar por completo ninguna
+dirección de tendencia (se había visto ese riesgo de sobreajuste en la
+muestra chica, no se confirmó con más datos).
+
+## Universo de 10 activos (dinamismo + intento de diversificación)
+
+`SYMBOLS` se amplió de 3 a 10 (26-ago): SPY, AAPL, QQQ + MSFT, NVDA, TSLA,
+AMZN, GOOGL, META, AMD — los 7 nuevos confirmados con cadena de opciones
+real a 7-14 DTE vía Alpaca antes de sumarlos. `MAX_CONCURRENT_POSITIONS`
+subió de 3 a 5 (10% del equity total en riesgo simultáneo, el tope que nos
+propusimos no superar). Honestidad sobre el resultado: en un sanity check
+de 2 semanas, el universo ampliado sí generó más actividad real (8 de 10
+símbolos abrieron posición en una semana, vs. 2 de 3 antes), pero **no
+demostró la diversificación esperada** — en la semana 17-21 ago, 5 de los
+7 símbolos nuevos perdieron simultáneamente (large-cap tech correlacionado
+en semanas de riesgo), empeorando el P&L agregado de esa semana en vez de
+amortiguarlo. El valor real del cambio es el dinamismo (más activos
+analizados y operados en vivo cada ciclo), no una reducción de riesgo
+comprobada.
+
+## Backtest final consolidado (6 semanas, config completa)
+
+Con toda la configuración final aplicada (DTE 7-14, buffer 2,
+`IRON_CONDOR_WING_PCT=0.02`, `IRON_CONDOR_SHORT_PCT=0.03`,
+`UMBRAL_TENDENCIA=0.025`), se simuló día por día SPY/AAPL/QQQ sobre 6
+semanas históricas reales (13-jul a 21-ago 2026 — el feed de datos de
+Alpaca disponible no alcanza más atrás de 06-jul-2026, así que las 6
+semanas están concentradas en ~7 semanas de calendario, no en momentos de
+mercado independientes entre sí). Resultado: **-$1,006.48** agregado sobre
+18 combinaciones símbolo/semana (7 positivas, 6 negativas, 5 sin operar).
+Mejora real de +$3,201.59 sobre las mismas 3 semanas con la config vieja
+(-$4,920.35), pero las 3 semanas nuevas (nunca usadas para ajustar nada)
+dieron signo opuesto a las 3 conocidas (+$712.28 vs. -$1,718.76) — la
+varianza semana a semana es mayor que cualquier tendencia central. No
+prometemos una semana positiva; el número honesto es que el diseño mejoró
+de forma medible sobre el mismo terreno de prueba, sin que eso garantice
+el resultado de la semana del concurso.
 
 ## Infraestructura Alpaca (de punta a punta)
 

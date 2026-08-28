@@ -2,7 +2,10 @@
 
 Contexto: agente de trading de opciones para el "Alpaca AI Trading Agents
 Hackathon" (28 ago – 4 sept 2026, $6,000 en premios, juzgado por P&L y
-creatividad/engagement). Cuenta paper dedicada: `PA3EGUEP0QCV`, $100,000.
+creatividad/engagement). **Cuenta paper oficial del hackathon:
+`PA3SQTOC6A22`, creada 28-ago-2026, balance inicial $100,000.**
+`PA3EGUEP0QCV` fue solo la cuenta de desarrollo/pruebas pre-contest, no
+la que se juzga.
 Requisito obligatorio: todas las estrategias deben incluir opciones.
 
 Estado actual (confirmado en backtest con datos reales de Alpaca, 3 años):

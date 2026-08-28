@@ -4,6 +4,18 @@ Agente construido para el hackathon de Alpaca (28 ago – 4 sept 2026). Reutiliz
 el "Algoritmo Mutante" del proyecto App Trading original, adaptado para operar
 **opciones** (requisito obligatorio del concurso) en vez del subyacente directo.
 
+Universo operable (`config.py` -> `SYMBOLS`, 10 activos, ampliado de 3 el 26-ago
+para demostrar dinamismo real y diversificar riesgo): SPY, AAPL, QQQ, MSFT,
+NVDA, TSLA, AMZN, GOOGL, META, AMD — cadena de opciones semanal (7-14 DTE)
+confirmada real vía Alpaca para los 10 antes de sumarlos. Ver `writeup.md`
+para el detalle de por qué se amplió y qué mostró el sanity check (más
+actividad real, pero diversificación más débil de lo esperado en la muestra).
+
+**Cuenta paper oficial del hackathon: `PA3SQTOC6A22`, creada 28-ago-2026,
+balance inicial $100,000.** `PA3EGUEP0QCV` fue solo la cuenta de
+desarrollo/pruebas pre-contest (usada del 24 al 27-ago), no la que se juzga
+— el mail de kickoff exige cuenta paper nueva y dedicada para la entrega.
+
 ## Sobre el acceso a red
 
 El proyecto se desarrolló originalmente asumiendo que el entorno cloud no
@@ -148,8 +160,8 @@ venv\Scripts\activate        # Windows
 pip install -r requirements.txt
 ```
 
-El archivo `.env` ya viene con las API keys de la cuenta paper dedicada al
-concurso ("Alpaca Hackathon 2026", cuenta `PA3EGUEP0QCV`, balance $100,000).
+El archivo `.env` ya viene con las API keys de la cuenta paper oficial del
+concurso (cuenta `PA3SQTOC6A22`, creada 28-ago-2026, balance $100,000).
 No las compartas ni las subas a un repo público.
 
 ## Verificar la conexión
