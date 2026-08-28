@@ -1,12 +1,18 @@
 """
-Pre-deploy en Railway: siembra positions_state.json en el volumen persistente
-(STATE_DIR) con las 5 posiciones reales abiertas al momento de migrar de la
-PC de Diego a Railway (28-ago-2026, cuenta PA3SQTOC6A22), para que el agente
-en Railway arranque sabiendo de ellas en vez de intentar abrirlas de nuevo.
+Foto de las 5 posiciones reales abiertas al momento de migrar live_agent.py
+de la PC de Diego a Railway (28-ago-2026, cuenta PA3SQTOC6A22).
 
-Solo escribe si el archivo todavia no existe en el volumen -- en deploys
-posteriores el volumen ya tiene el estado real y no debe pisarse con esta
-foto vieja.
+SNAPSHOT_28AGO la importa live_agent.py (_sembrar_estado_inicial_si_corresponde)
+para sembrar el volumen persistente en el primer arranque en Railway -- desde
+DENTRO del proceso, después de que el volumen ya está montado. Un intento
+anterior de sembrar esto vía preDeployCommand (fase previa al mount del
+volumen) escribió al filesystem efímero del contenedor en vez del volumen,
+y el agente arrancó sin ver las posiciones ya abiertas -> abrió duplicados
+reales en SPY/AAPL/QQQ (incidente del 28-ago, remediado a mano).
+
+Este módulo también se puede correr standalone (`python scripts/seed_state.py`)
+para sembrar manualmente, pero ya no es necesario -- queda solo por si hace
+falta re-sembrar algo a mano.
 """
 
 import json

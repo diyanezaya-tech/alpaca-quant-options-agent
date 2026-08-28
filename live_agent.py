@@ -87,7 +87,27 @@ def log(msg: str):
 
 # --- Persistencia de estado (sobrevive reinicios) ---
 
+def _sembrar_estado_inicial_si_corresponde():
+    """Primer arranque en un volumen persistente (STATE_DIR seteado, ej. Railway)
+    sin positions_state.json todavía: siembra la foto de posiciones reales del
+    momento de la migración, para no perder de vista posiciones ya abiertas en
+    el broker. No corre en local (STATE_DIR sin setear) ni si el archivo ya
+    existe -- corre en el propio proceso, después de que el volumen ya está
+    montado (a diferencia de un preDeployCommand aparte, que corre antes)."""
+    if not os.getenv("STATE_DIR") or STATE_FILE.exists():
+        return
+    try:
+        from scripts.seed_state import SNAPSHOT_28AGO
+    except ImportError:
+        return
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    with open(STATE_FILE, "w", encoding="utf-8") as f:
+        json.dump(SNAPSHOT_28AGO, f, indent=2)
+    log(f"Sembrado {STATE_FILE} con {len(SNAPSHOT_28AGO)} posiciones (primer arranque en volumen persistente).")
+
+
 def cargar_estado() -> dict:
+    _sembrar_estado_inicial_si_corresponde()
     if STATE_FILE.exists():
         try:
             with open(STATE_FILE, "r", encoding="utf-8") as f:
