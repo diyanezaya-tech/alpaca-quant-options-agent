@@ -66,7 +66,8 @@ import cli_executor
 
 load_dotenv()
 
-STATE_FILE = Path(__file__).parent / "positions_state.json"
+STATE_DIR = Path(os.getenv("STATE_DIR", Path(__file__).parent))
+STATE_FILE = STATE_DIR / "positions_state.json"
 LOG_FILE = Path(__file__).parent / "live_agent.log"
 
 logging.basicConfig(
